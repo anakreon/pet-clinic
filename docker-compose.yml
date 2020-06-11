@@ -25,7 +25,8 @@ services:
     depends_on:
      - config-server
      - discovery-server
-    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+     - customers-mysql
+    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761", "-wait=tcp://customers-mysql:3306","-timeout=200s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
     ports:
     - 8081:8081
 
@@ -36,7 +37,7 @@ services:
     depends_on:
      - config-server
      - discovery-server
-    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761", "-wait=tcp://visits-mysql:3306", "-timeout=200s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
     ports:
      - 8082:8082
 
@@ -47,7 +48,7 @@ services:
     depends_on:
      - config-server
      - discovery-server
-    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-timeout=60s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+    entrypoint: ["./dockerize","-wait=tcp://discovery-server:8761","-wait=tcp://vets-mysql:3306", "-timeout=200s","--","java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
     ports:
      - 8083:8083
 
@@ -97,3 +98,60 @@ services:
     mem_limit: 256M
     ports:
     - 9091:9090
+
+  customers-mysql:
+    image: mysql:8.0.20
+    restart: on-failure
+    container_name: customers-mysql
+    environment:
+      MYSQL_DATABASE: database
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: dbpassword
+      MYSQL_ROOT_PASSWORD: dbpassword
+    ports:
+      - 3306:3306
+    volumes:
+      - customers-mysql-volume:/data/customers
+      - ./spring-petclinic-customers-service/src/main/resources/db/mysql/data.sql:/docker-entrypoint-initdb.d/data.sql
+      - ./spring-petclinic-customers-service/src/main/resources/db/mysql/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+
+  vets-mysql:
+    image: mysql:8.0.20
+    restart: on-failure
+    container_name: vets-mysql
+    environment:
+      MYSQL_DATABASE: database
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: dbpassword
+      MYSQL_ROOT_PASSWORD: dbpassword
+    ports:
+      - 3307:3306
+    volumes:
+      - vets-mysql-volume:/data/customers
+      - ./spring-petclinic-vets-service/src/main/resources/db/mysql/data.sql:/docker-entrypoint-initdb.d/data.sql
+      - ./spring-petclinic-vets-service/src/main/resources/db/mysql/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+
+  visits-mysql:
+    image: mysql:8.0.20
+    restart: on-failure
+    container_name: visits-mysql
+    environment:
+      MYSQL_DATABASE: database
+      MYSQL_USER: dbuser
+      MYSQL_PASSWORD: dbpassword
+      MYSQL_ROOT_PASSWORD: dbpassword
+    ports:
+      - 3308:3306
+    volumes:
+      - visits-mysql-volume:/data/customers
+      - ./spring-petclinic-visits-service/src/main/resources/db/mysql/data.sql:/docker-entrypoint-initdb.d/data.sql
+      - ./spring-petclinic-visits-service/src/main/resources/db/mysql/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+
+
+volumes:
+  customers-mysql-volume:
+    driver: local
+  vets-mysql-volume:
+    driver: local
+  visits-mysql-volume:
+    driver: local
